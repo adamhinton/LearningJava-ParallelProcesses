@@ -1,15 +1,51 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main {
-    public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+package dev.lpa;
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+
+        int numbersLength = 100_000;
+        long[] numbers = new Random().longs(numbersLength, 1, numbersLength).toArray();
+
+        long sum = Arrays.stream(numbers).sum();
+        System.out.println("sum = " + sum);
+
+        ExecutorService threadPool = Executors.newWorkStealingPool(4);
+
+        List<Callable<Long>> tasks = new ArrayList<>();
+
+        int taskNo = 10;
+        int splitCount = numbersLength / taskNo;
+        for (int i = 0; i < taskNo; i++) {
+            int start = i * splitCount;
+            int end = start + splitCount;
+            tasks.add(() -> {
+                long taskSum = 0;
+                for (int j = start; j < end; j++) {
+                    taskSum += (long) numbers[j];
+                }
+                return taskSum;
+            });
         }
+
+        List<Future<Long>> futures = threadPool.invokeAll(tasks);
+
+        long taskSum = 0;
+        for (Future<Long> future : futures){
+            taskSum += future.get();
+        }
+
+        System.out.println("Thrad Pool sum = " + taskSum);
+
+        threadPool.shutdown();
+
     }
 }
